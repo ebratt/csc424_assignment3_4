@@ -222,25 +222,23 @@ str(data)
 
 # Linear Discriminant Analysis with Jacknifed Prediction
 load_package("MASS")
+# data[, 2:13] <- scale(data[,2:13])
+# head(data)
 (lda <- lda(data$facrank ~ ., data=data))
 ld_coefs <- lda$scaling
 (round(ld_coefs,3))
 
-data[, 2:13] <- scale(data[,2:13])
-str(data)
-(lda <- lda(data$facrank ~ ., data=data))
-ld_coefs <- lda$scaling
-(round(ld_coefs,3))
-
-# make predictions
+# make predictions and store predicted classes's
 plda <- predict(lda)
+
+# see how the histograms look
 ldahist(data=plda$x[,1], g=data$facrank)
 ldahist(data=plda$x[,2], g=data$facrank)
 
 # plot the LDA projection
 (prop.lda = lda$svd^2/sum(lda$svd^2))
 lda_data <- data.frame(facrank = data[,"facrank"], lda = plda$x)
-lda_data <- lda_data[,1:3]
+lda_data <- lda_data[,1:3] # drop unnecessary LD's
 load_package("ggplot2")
 load_package("scales")
 ggplot(lda_data) + 
@@ -248,178 +246,82 @@ ggplot(lda_data) +
     labs(x = paste("LD1 (", percent(prop.lda[1]), ")", sep=""),
          y = paste("LD2 (", percent(prop.lda[2]), ")", sep="")) +
     ggtitle("LDA Projection of Faculty Data") + 
-    theme(plot.title = element_text(lineheight=.8, face="bold")) +
-    xlim(-5,5) + 
-    ylim(-5,5)
+    theme(plot.title = element_text(lineheight=.8, face="bold"))
 
 ############################
 # answer to a.             #
 ############################
+scaled_data <- scale(data[,2:13]) # uses rmse
+summary(scaled_data)
 # Determine number of clusters
-wss <- (nrow(lda_data[, 2:3])-1)*sum(apply(lda_data[, 2:3],2,var))
-for (i in 2:15) wss[i] <- sum(kmeans(lda_data[,2:3], 
+wss <- (nrow(scaled_data)-1)*sum(apply(scaled_data,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(scaled_data, 
                                      centers=i)$withinss)
 plot(1:15, wss, type="b", xlab="Number of Clusters",
      ylab="Within groups sum of squares")
-
-# K-Means Cluster Analysis for k=4
-fit4 <- kmeans(lda_data[,2:3], 4) # 4 cluster solution
-# get cluster means 
-aggregate(lda_data[,2:3],by=list(fit4$cluster),FUN=mean)
-# append cluster assignment
-lda_data <- data.frame(lda_data, fit4$cluster)
-str(lda_data)
+# K-Means Cluster Analysis for k=5 on original data
+fit5 <- kmeans(scaled_data, 5) # 5 cluster solution
 
 # cluster plot with ellipses
 load_package("cluster")
-clusplot(lda_data[,2:3], 
-         fit4$cluster, 
-         color=TRUE, 
-         shade=TRUE, 
-         labels=4, 
-         lines=0,
-         main="Cluster Plot of Faculty Data with k=4",
-         xlab="LD1",
-         ylab="LD2")
-
-# Centroid Plot against 1st 2 discriminant functions
-load_package("fpc")
-plotcluster(lda_data[,2:3], 
-            fit4$cluster,
-            main="Cluster Plot of Faculty Data with k=4",
-            xlab="LD1",
-            ylab="LD2")
-
-# K-Means Cluster Analysis for k=5
-fit5 <- kmeans(lda_data[,2:3], 5) # 5 cluster solution
-# get cluster means 
-aggregate(lda_data[,2:3],by=list(fit5$cluster),FUN=mean)
-# append cluster assignment
-lda_data <- data.frame(lda_data, fit5$cluster)
-str(lda_data)
-
-# cluster plot with ellipses
-load_package("cluster")
-clusplot(lda_data[,2:3], 
+clusplot(scaled_data, 
          fit5$cluster, 
          color=TRUE, 
          shade=TRUE, 
          labels=4, 
          lines=0,
-         main="Cluster Plot of Faculty Data with k=5",
-         xlab="LD1",
-         ylab="LD2")
+         main="Cluster Plot of Faculty Data with k=5")
 
 # Centroid Plot against 1st 2 discriminant functions
 load_package("fpc")
-plotcluster(lda_data[,2:3], 
+plotcluster(scaled_data, 
+            method="dc",
             fit5$cluster,
-            main="Cluster Plot of Faculty Data with k=5",
-            xlab="LD1",
-            ylab="LD2")
-
-# K-Means Cluster Analysis for k=6
-fit6 <- kmeans(lda_data[,2:3], 6) # 6 cluster solution
-# get cluster means 
-aggregate(lda_data[,2:3],by=list(fit6$cluster),FUN=mean)
-# append cluster assignment
-lda_data <- data.frame(lda_data, fit6$cluster)
-str(lda_data)
-
-# cluster plot with ellipses
-load_package("cluster")
-clusplot(lda_data[,2:3], 
-         fit6$cluster, 
-         color=TRUE, 
-         shade=TRUE, 
-         labels=4, 
-         lines=0,
-         main="Cluster Plot of Faculty Data with k=6",
-         xlab="LD1",
-         ylab="LD2")
-
-# Centroid Plot against 1st 2 discriminant functions
-load_package("fpc")
-plotcluster(lda_data[,2:3], 
-            fit6$cluster,
-            main="Cluster Plot of Faculty Data with k=6",
-            xlab="LD1",
-            ylab="LD2")
-
-# K-Means Cluster Analysis for k=10
-fit10 <- kmeans(lda_data[,2:3], 10) # 10 cluster solution
-# get cluster means 
-aggregate(lda_data[,2:3],by=list(fit10$cluster),FUN=mean)
-# append cluster assignment
-lda_data <- data.frame(lda_data, fit10$cluster)
-str(lda_data)
-
-# cluster plot with ellipses
-load_package("cluster")
-clusplot(lda_data[,2:3], 
-         fit10$cluster, 
-         color=TRUE, 
-         shade=TRUE, 
-         labels=4, 
-         lines=0,
-         main="Cluster Plot of Faculty Data with k=10",
-         xlab="LD1",
-         ylab="LD2")
-
-# Centroid Plot against 1st 2 discriminant functions
-load_package("fpc")
-plotcluster(lda_data[,2:3], 
-            fit10$cluster,
-            main="Cluster Plot of Faculty Data with k=10",
-            xlab="LD1",
-            ylab="LD2")
+            main="Cluster Plot of Faculty Data with k=5")
 
 ############################
 # answer to b.             #
 ############################
-d <- dist(lda_data[,2:3])
-fit <- hclust(d, method="ward.D2") 
+clvecd <- as.integer(data[,"facrank"])
+d <- dist(scaled_data, method="euclidean")
+# Option "ward.D2" implements Ward's (1963) clustering criterion 
+# (Murtagh and Legendre 2014). With the latter, the dissimilarities 
+# are squared before cluster updating.
+fit <- hclust(d, method="ward.D2")
 load_package("sparcl")
-y <- c("red","blue","green","yellow","cyan")[lda_data$facrank]
-ColorDendrogram(fit, y = y, main = "Hierarchical Clustering of Faculty Data", 
-                branchlength = 80)
-#plot(fit, hang = -1, labels=FALSE, main="Hierarchical Clustering of Faculty Data") # display dendogram
-groups <- cutree(fit, k=5) # cut tree into 5 clusters
-# draw dendogram with red borders around the 5 clusters 
-rect.hclust(fit, k=4, border="red")
-
+ColorDendrogram(fit, 
+                y = clvecd, 
+                main = "Hierarchical Clustering of Faculty Data", 
+                xlab = "Euclidean Distance",
+                sub = "with Ward D2 Clustering",
+                branchlength = 50)
+# draw red borders around the 5 clusters 
+rect.hclust(fit, k=5, border="red")
+# I'm not really seeing anything interesting
 
 ############################
 # answer to c.             #
 ############################
-# Centroid Plot against 1st 2 discriminant functions
-plotcluster(lda_data[,2:3], 
-            fit4$cluster,
-            col=lda_data$facrank,
-            main="Cluster Plot of Faculty Data with k=4",
-            xlab="LD1",
-            ylab="LD2")
+plotcluster(x=scaled_data, 
+            clvecd=clvecd,
+            method="dc",
+            clnum=fit5$cluster,
+            main="Cluster Plot of Faculty Data with k=5")
+legend("topleft", legend = paste(lda$lev), pch=16, col=1:5)
 
-# Centroid Plot against 1st 2 discriminant functions
-plotcluster(lda_data[,2:3], 
-            fit5$cluster,
-            col=lda_data$facrank,
-            main="Cluster Plot of Faculty Data with k=5",
-            xlab="LD1",
-            ylab="LD2")
 
-# Centroid Plot against 1st 2 discriminant functions
-plotcluster(lda_data[,2:3], 
-            fit6$cluster,
-            col=lda_data$facrank,
-            main="Cluster Plot of Faculty Data with k=6",
-            xlab="LD1",
-            ylab="LD2")
 
-# Centroid Plot against 1st 2 discriminant functions
-plotcluster(lda_data[,2:3], 
-            fit10$cluster,
-            col=lda_data$facrank,
-            main="Cluster Plot of Faculty Data with k=10",
-            xlab="LD1",
-            ylab="LD2")
+# example from class
+A <- data.frame(source="1", mvrnorm(500, c(0,0), matrix(c(5,0,0,10),2,2)))
+B <- data.frame(source="2", mvrnorm(500, c(3,0), matrix(c(3,0,0,1),2,2)))
+C <- data.frame(source="3", mvrnorm(500, c(10,10), matrix(c(5,2,2,5),2,2)))
+D <- rbind(A,B,C)
+plot(D[,2:3], col=D[,1], pch=16)
+fit3 <- kmeans(D[,2:3], 3)
+plot(D[,2:3], col=fit3$cluster, pch=16)
+A_ctr <- fit3$centers[1,]
+B_ctr <- fit3$centers[2,]
+C_ctr <- fit3$centers[3,]
+points(A_ctr["X1"], A_ctr["X2"], pch=4, col="yellow", cex=2)
+points(B_ctr["X1"], B_ctr["X2"], pch=4, col="yellow", cex=2)
+points(C_ctr["X1"], C_ctr["X2"], pch=4, col="yellow", cex=2)
